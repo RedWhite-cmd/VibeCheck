@@ -8,11 +8,11 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject var healthManager = HealthManager()
-    @StateObject var taskManager = TaskManager()
-    @StateObject var pulseScanner = HeartRateScanner()
+    @EnvironmentObject var healthManager: HealthManager
+    @EnvironmentObject var taskManager: TaskManager
+    @EnvironmentObject var pulseScanner: HeartRateScanner
     
-    @State private var showingScanner = false
+    @State private var isScanning = false
 
     var finalSafetyScore: Int {
         return 100 + healthManager.exercisePoints - healthManager.stressPenalty - taskManager.taskPenalty
@@ -68,6 +68,46 @@ struct ContentView: View {
             .padding().frame(maxWidth: .infinity, alignment: .leading)
             .background(Color(.secondarySystemBackground)).cornerRadius(15)
 
+            // Inline Scan section on the dashboard
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Label("Manual Scan", systemImage: "waveform.path.ecg")
+                        .font(.headline)
+                    Spacer()
+                    Circle()
+                        .fill(isScanning ? Color.red : Color.gray.opacity(0.4))
+                        .frame(width: 10, height: 10)
+                        .accessibilityLabel(isScanning ? "Scanning active" : "Scanning inactive")
+                }
+
+                Text("BPM: \(pulseScanner.bpm)")
+                    .font(.title2).bold()
+
+                HStack(spacing: 12) {
+                    Button(isScanning ? "Stop" : "Start") {
+                        if isScanning {
+                            pulseScanner.stopCapture()
+                            isScanning = false
+                        } else {
+                            pulseScanner.startCapture()
+                            isScanning = true
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+
+                    Button("Sync Now") {
+                        // Optional quick sync alongside scanning controls
+                        healthManager.requestAuthorization()
+                        healthManager.fetchLatestHRV()
+                        taskManager.fetchTaskLoad()
+                    }
+                    .buttonStyle(.bordered)
+                }
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.secondarySystemBackground))
+            .cornerRadius(15)
             
             HStack(spacing: 20) {
                 Button("Sync") {
@@ -76,29 +116,9 @@ struct ContentView: View {
                     taskManager.fetchTaskLoad()
                 }
                 .buttonStyle(.bordered)
-
-                Button("Manual Scan") {
-                    showingScanner = true
-                }
-                .buttonStyle(.borderedProminent)
             }
         }
         .padding()
-        // Pop-up for the Heart Rate Scanner
-        .sheet(isPresented: $showingScanner) {
-            VStack(spacing: 20) {
-                Text("Place your finger over the back camera and flash")
-                    .multilineTextAlignment(.center)
-                
-                Text("BPM: \(pulseScanner.bpm)")
-                    .font(.largeTitle).bold()
-
-                Button("Stop Scan") {
-                    pulseScanner.stopCapture()
-                    showingScanner = false
-                }
-            }
-            .onAppear { pulseScanner.startCapture() }
-        }
     }
 }
+
