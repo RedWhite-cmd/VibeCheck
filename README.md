@@ -1,4 +1,5 @@
 VibeCheck
+
 VibeCheck is an iOS application built with SwiftUI and HealthKit designed to help users monitor their physiological stress levels in real-time. By leveraging heart rate data and biometric scanning, the app provides actionable insights into the user's current "vibe" or mental state.
 
 ✨ Features
